@@ -48,23 +48,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 #langsw button:not(.on):hover{background:var(--bg-2)}
 
 /* Search */
-#searchwrap{position:relative;flex-shrink:0;width:260px}
+#searchwrap{position:relative;flex-shrink:0}
+/* Desktop: inline search bar */
+#search-btn{
+  display:none;background:none;border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;cursor:pointer;color:var(--text-3);align-items:center;
+  transition:border .15s;
+}
+#search-btn:hover{border-color:var(--blue);color:var(--blue)}
+#search-overlay{position:relative;width:260px}
+#search-inner{
+  display:flex;align-items:center;gap:8px;
+  border:1px solid var(--border);border-radius:8px;
+  padding:6px 10px;background:var(--bg-2);transition:border .15s,box-shadow .15s;
+}
+#search-inner:focus-within{border-color:var(--blue);box-shadow:0 0 0 2px rgba(22,119,255,.1);background:#fff}
 #search{
-  width:100%;padding:7px 60px 7px 12px;border:1px solid var(--border);
-  border-radius:8px;font-size:14px;color:var(--text);background:var(--bg-2);
-  outline:none;transition:border .15s,box-shadow .15s;
+  flex:1;border:none;background:none;font-size:14px;color:var(--text);
+  outline:none;min-width:0;
 }
-#search:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(22,119,255,.1);background:#fff}
-.srch-kbd{
-  position:absolute;right:8px;top:50%;transform:translateY(-50%);
-  background:#fff;color:var(--text-3);border:1px solid var(--border);
-  border-radius:4px;font-size:11px;padding:1px 5px;pointer-events:none;white-space:nowrap;
-}
+#search::placeholder{color:var(--text-3)}
+#search-close{display:none}
 #results{
   position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;
   border:1px solid var(--border);border-radius:8px;
   box-shadow:0 6px 16px rgba(0,0,0,.08);max-height:55vh;overflow-y:auto;
-  display:none;z-index:200;
+  display:none;z-index:200;min-width:280px;
 }
 .hit{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)}
 .hit:last-child{border-bottom:none}
@@ -128,6 +137,7 @@ body.nav-open #side-backdrop{display:block;opacity:1}
   text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;
 }
 #atoc ul{list-style:none}
+.toc-list{}
 #atoc li{margin:2px 0}
 #atoc .toc-lv2 a{
   font-size:13px;color:var(--text-2);text-decoration:none;
@@ -244,20 +254,26 @@ figcaption{margin-top:8px;font-size:13px;color:var(--text-3);font-style:italic}
   .hdr-logo svg{width:18px;height:18px}
   .hdr-ver{display:none}   /* ẩn badge version */
 
-  /* Search: thay bằng icon, bấm mở expand */
-  #searchwrap{width:auto}
-  #search{
-    width:36px;padding:7px;border-radius:50%;
-    font-size:0;cursor:pointer;transition:all .25s;
-    background:var(--bg-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%2300000073' stroke-width='2'/%3E%3Cpath d='M16.5 16.5 21 21' stroke='%2300000073' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center/16px no-repeat;
+  /* Search mobile: icon btn → fullscreen overlay */
+  #search-btn{display:flex}
+  #search-overlay{
+    display:none;position:fixed;inset:0;background:rgba(255,255,255,.98);
+    z-index:150;flex-direction:column;padding:12px 16px;gap:8px;
   }
-  #search.expanded{
-    width:min(240px,calc(100vw - 160px));font-size:14px;
-    border-radius:8px;padding:7px 36px 7px 12px;background-color:var(--bg-2);
-    background-image:none;cursor:text;
+  #search-overlay:not([hidden]){display:flex}
+  #search-inner{
+    border-radius:10px;padding:10px 14px;gap:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);background:#fff;
   }
-  .srch-kbd{display:none}
-  #results{min-width:280px;right:auto;left:-60px;width:min(320px,90vw)}
+  #search{font-size:16px}
+  #search-close{
+    display:flex;background:none;border:none;font-size:20px;cursor:pointer;
+    color:var(--text-3);padding:4px;flex-shrink:0;
+  }
+  #results{
+    position:static;box-shadow:none;border:1px solid var(--border);
+    max-height:calc(100vh - 120px);border-radius:10px;
+  }
 
   /* Sidebar: slide-in overlay */
   #side{
@@ -330,9 +346,23 @@ figcaption{margin-top:8px;font-size:13px;color:var(--text-3);font-style:italic}
     <button id="btn-en" data-lang="en">EN</button>
   </div>
   <div id="searchwrap">
-    <input id="search" type="text" autocomplete="off" spellcheck="false">
-    <span class="srch-kbd">Ctrl K</span>
-    <div id="results"></div>
+    <button id="search-btn" aria-label="Search" title="Search (Ctrl+K)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div id="search-overlay" hidden>
+      <div id="search-inner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;color:#999">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+          <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="search" type="text" autocomplete="off" spellcheck="false" placeholder="Search…">
+        <button id="search-close">✕</button>
+      </div>
+      <div id="results"></div>
+    </div>
   </div>
 </header>
 
@@ -424,7 +454,7 @@ figcaption{margin-top:8px;font-size:13px;color:var(--text-3);font-style:italic}
 <!-- Right anchor TOC -->
 <aside id="atoc">
   <div class="atoc-title" id="atoc-title">Contents</div>
-  <ul>
+  <div class="toc-list">
     <div class="lang on" id="toc-vi"><li class="toc-lv2"><a href="#vi-cổng-digi-sign-hệ-thống-ký-số-tài-liệu">Cổng DIGI-SIGN — Hệ thống ký số tài liệu</a></li>
 <li class="toc-lv2"><a href="#vi-giới-thiệu">1. GIỚI THIỆU</a></li>
 <li class="toc-lv3"><a href="#vi-mục-đích-tài-liệu">1.1 Mục đích tài liệu</a></li>
@@ -485,7 +515,7 @@ figcaption{margin-top:8px;font-size:13px;color:var(--text-3);font-style:italic}
 <li class="toc-lv2"><a href="#en-frequently-asked-questions-faq">7. FREQUENTLY ASKED QUESTIONS (FAQ)</a></li>
 <li class="toc-lv2"><a href="#en-troubleshooting">8. TROUBLESHOOTING</a></li>
 <li class="toc-lv2"><a href="#en-support">9. SUPPORT</a></li></div>
-  </ul>
+  </div>
 </aside>
 
 <!-- Main content -->
@@ -1647,17 +1677,21 @@ document.getElementById('btn-vi').onclick = () => setLang('vi');
 
 // Mobile: search expand/collapse
 // mobile search expand (box is declared above)
-box.addEventListener('focus', () => {
-  if (window.innerWidth <= 768) mSearch.classList.add('expanded');
-});
-box.addEventListener('blur', () => {
-  setTimeout(() => {
-    if (window.innerWidth <= 768 && !mSearch.value) mSearch.classList.remove('expanded');
-  }, 200);
-});
-box.addEventListener('click', () => {
-  if (window.innerWidth <= 768) { mSearch.classList.add('expanded'); mSearch.focus(); }
-});
+// Mobile search: icon btn opens fullscreen overlay
+const searchBtn = document.getElementById('search-btn');
+const searchOverlay = document.getElementById('search-overlay');
+const searchClose = document.getElementById('search-close');
+function openSearch() {
+  if (searchOverlay) searchOverlay.hidden = false;
+  setTimeout(() => box.focus(), 50);
+}
+function closeSearch() {
+  if (searchOverlay) searchOverlay.hidden = true;
+  box.value = '';
+  res.style.display = 'none';
+}
+if (searchBtn) searchBtn.addEventListener('click', openSearch);
+if (searchClose) searchClose.addEventListener('click', closeSearch);
 
 // Mobile: close sidebar when nav link clicked
 document.querySelectorAll('#side a').forEach(a => {
@@ -1743,8 +1777,12 @@ document.addEventListener('click', e => {
   } else if (!e.target.closest('#searchwrap')) res.style.display='none';
 });
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); box.focus(); box.select(); }
-  if (e.key==='Escape') { res.style.display='none'; box.blur(); }
+  if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') {
+    e.preventDefault();
+    if (window.innerWidth <= 768) openSearch();
+    else { box.focus(); box.select(); }
+  }
+  if (e.key==='Escape' && searchOverlay.hidden) { res.style.display='none'; box.blur(); }
 });
 
 // ── prev / next ───────────────────────────────────────────────────────────
